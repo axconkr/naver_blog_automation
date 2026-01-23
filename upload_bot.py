@@ -57,45 +57,138 @@ def find_blog_excel_file():
     return latest_file
 
 def naver_login():
-    """네이버 로그인 처리"""
     print("네이버 로그인 페이지 접속 중...")
     driver.get("https://nid.naver.com/nidlogin.login")
-    time.sleep(2)
+    time.sleep(3)
     
-    # 아이디 입력
     print("아이디 입력 중...")
     id_input = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "id"))
     )
     id_input.click()
     time.sleep(0.5)
-    
     pyperclip.copy(NAVER_ID)
     id_input.send_keys(PASTE_KEY, 'v')
-    time.sleep(0.5)
+    time.sleep(1)
     
-    # 비밀번호 입력
+    current_id = id_input.get_attribute('value')
+    if not current_id:
+        print("  클립보드 방식 실패, JavaScript 방식 시도...")
+        driver.execute_script(f"arguments[0].value = '{NAVER_ID}';", id_input)
+        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", id_input)
+        time.sleep(0.5)
+    
     print("비밀번호 입력 중...")
     pw_input = driver.find_element(By.ID, "pw")
     pw_input.click()
     time.sleep(0.5)
-    
     pyperclip.copy(NAVER_PW)
     pw_input.send_keys(PASTE_KEY, 'v')
-    time.sleep(0.5)
+    time.sleep(1)
     
-    # 로그인 버튼 클릭
+    current_pw = pw_input.get_attribute('value')
+    if not current_pw:
+        print("  클립보드 방식 실패, JavaScript 방식 시도...")
+        driver.execute_script(f"arguments[0].value = '{NAVER_PW}';", pw_input)
+        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }));", pw_input)
+        time.sleep(0.5)
+    
     print("로그인 버튼 클릭 중...")
     login_button = driver.find_element(By.ID, "log.login")
     login_button.click()
     
-    # 로그인 후 2초 대기
-    print("로그인 처리 중... (2초 대기)")
-    time.sleep(2)
-    print("로그인 완료!\n")
+    print("로그인 처리 중... (3초 대기)")
+    time.sleep(3)
+    
+    current_url = driver.current_url
+    if "nidlogin" not in current_url:
+        print("로그인 성공!\n")
+    else:
+        print("로그인 실패 - 수동 확인 필요\n")
 
-def write_blog_post(title, content):
-    """블로그 글쓰기 페이지에 제목과 본문을 입력하고 저장"""
+def select_category(category_name):
+    """발행 레이어에서 카테고리 선택"""
+    if not category_name:
+        return
+    
+    print(f"  카테고리 선택 중: {category_name}")
+    try:
+        cat_button = WebDriverWait(driver, 5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, ".selectbox_button__jb1Dt"))
+        )
+        driver.execute_script("arguments[0].click();", cat_button)
+        time.sleep(1)
+        
+        cat_labels = driver.find_elements(By.CSS_SELECTOR, ".option_list_layer__YX1Tq label.radio_label__mB6ia")
+        for label in cat_labels:
+            label_text = label.text.strip()
+            if category_name in label_text or label_text in category_name:
+                driver.execute_script("arguments[0].click();", label)
+                print(f"    - 카테고리 '{label_text}' 선택 완료")
+                time.sleep(0.5)
+                return
+        
+        print(f"    - 카테고리 '{category_name}'를 찾을 수 없음")
+        driver.execute_script("arguments[0].click();", cat_button)
+    except Exception as e:
+        print(f"    - 카테고리 선택 실패: {e}")
+
+
+def set_schedule_time(schedule_time_str):
+    """예약 발행 시간 설정 (형식: YYYY-MM-DD HH:MM)"""
+    if not schedule_time_str:
+        return
+    
+    print(f"  예약 발행 설정 중: {schedule_time_str}")
+    try:
+        from selenium.webdriver.support.ui import Select
+        
+        parts = schedule_time_str.strip().split()
+        if len(parts) != 2:
+            print(f"    - 잘못된 형식 (YYYY-MM-DD HH:MM 필요)")
+            return
+        
+        date_part, time_part = parts
+        hour, minute = time_part.split(":")
+        
+        minute_rounded = str((int(minute) // 10) * 10).zfill(2)
+        
+        reserve_radio = driver.find_element(By.CSS_SELECTOR, "input#radio_time2[value='pre']")
+        driver.execute_script("arguments[0].click();", reserve_radio)
+        time.sleep(1)
+        
+        date_input = driver.find_element(By.CSS_SELECTOR, "input.input_date__QmA0s")
+        driver.execute_script("arguments[0].click();", date_input)
+        time.sleep(1)
+        
+        try:
+            year, month, day = date_part.split("-")
+            day_buttons = driver.find_elements(By.CSS_SELECTOR, ".react-datepicker__day:not(.react-datepicker__day--outside-month)")
+            for btn in day_buttons:
+                if btn.text.strip() == str(int(day)):
+                    driver.execute_script("arguments[0].click();", btn)
+                    print(f"    - 날짜 {day}일 선택")
+                    break
+            time.sleep(0.5)
+        except:
+            print(f"    - 날짜 선택 실패, 기본 날짜 사용")
+        
+        hour_select = Select(driver.find_element(By.CSS_SELECTOR, "select.hour_option__J_heO"))
+        hour_select.select_by_value(hour.zfill(2))
+        print(f"    - 시간 {hour}시 선택")
+        
+        minute_select = Select(driver.find_element(By.CSS_SELECTOR, "select.minute_option__Vb3xB"))
+        minute_select.select_by_value(minute_rounded)
+        print(f"    - 분 {minute_rounded}분 선택")
+        
+        time.sleep(0.5)
+        print(f"    - 예약 발행 설정 완료")
+    except Exception as e:
+        print(f"    - 예약 발행 설정 실패: {e}")
+
+
+def write_blog_post(title, content, category=None, schedule_time=None):
+    """블로그 글쓰기 페이지에 제목과 본문을 입력하고 발행"""
     # 블로그 글쓰기 페이지로 이동
     print("블로그 글쓰기 페이지로 이동 중...")
     driver.get("https://blog.naver.com/GoBlogWrite.naver")
@@ -130,7 +223,7 @@ def write_blog_post(title, content):
     except:
         print("  - 도움말 패널 닫기 버튼 없음 (무시)")
     
-    # 3. 제목 입력
+    # 3. 제목 입력 (클립보드 붙여넣기 방식)
     print(f"제목 입력 중: {title}")
     title_element = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.CSS_SELECTOR, ".se-section-documentTitle"))
@@ -138,19 +231,16 @@ def write_blog_post(title, content):
     title_element.click()
     time.sleep(0.5)
     
-    # 기존 내용 삭제 후 새 제목 입력
-    title_element.send_keys(PASTE_KEY, 'a')  # 전체 선택
-    time.sleep(0.2)
+    title_paragraph = driver.find_element(By.CSS_SELECTOR, ".se-section-documentTitle .se-text-paragraph")
+    title_paragraph.click()
+    time.sleep(0.3)
     
-    # ActionChains를 사용하여 0.03초 간격으로 한 글자씩 타이핑
-    actions = ActionChains(driver)
-    for char in str(title):
-        actions.send_keys(char).pause(0.03)
-    actions.perform()
-    print(f"  - 제목 입력 완료")
+    pyperclip.copy(str(title))
+    ActionChains(driver).key_down(PASTE_KEY).send_keys('v').key_up(PASTE_KEY).perform()
     time.sleep(0.5)
+    print(f"  - 제목 입력 완료")
     
-    # 4. 본문 입력
+    # 4. 본문 입력 (클립보드 붙여넣기 방식)
     print("본문 입력 중...")
     content_element = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.CSS_SELECTOR, ".se-section-text"))
@@ -158,39 +248,54 @@ def write_blog_post(title, content):
     content_element.click()
     time.sleep(0.5)
     
-    # 기존 내용 삭제
-    content_element.send_keys(PASTE_KEY, 'a')
-    time.sleep(0.2)
+    text_paragraph = driver.find_element(By.CSS_SELECTOR, ".se-section-text .se-text-paragraph")
+    text_paragraph.click()
+    time.sleep(0.3)
     
-    # 본문을 줄 단위로 입력 (엔터 포함, 0.03초 간격)
     content_str = str(content) if content else ""
-    actions = ActionChains(driver)
-    content_lines = content_str.split('\n')
-    
-    for i, line in enumerate(content_lines):
-        # 각 줄의 텍스트 입력
-        for char in line:
-            actions.send_keys(char).pause(0.03)
-        # 마지막 줄이 아니면 엔터 입력
-        if i < len(content_lines) - 1:
-            actions.send_keys(Keys.RETURN).pause(0.03)
-    
-    actions.perform()
-    print(f"  - 본문 입력 완료 ({len(content_lines)}줄)")
+    pyperclip.copy(content_str)
+    ActionChains(driver).key_down(PASTE_KEY).send_keys('v').key_up(PASTE_KEY).perform()
+    time.sleep(1)
+    print(f"  - 본문 입력 완료")
     time.sleep(1)
     
-    # 5. 저장 버튼 클릭
-    print("저장 버튼 클릭 중...")
-    save_button = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, ".save_btn__bzc5B"))
-    )
-    save_button.click()
-    print("  - 저장 버튼 클릭 완료")
-    time.sleep(3)  # 저장 완료 대기
+    # 5. 발행 버튼 클릭 전 도움말 패널 닫기
+    print("발행 버튼 클릭 중...")
+    try:
+        help_close = driver.find_element(By.CSS_SELECTOR, ".se-help-panel-close-button")
+        help_close.click()
+        print("  - 도움말 패널 닫기 완료")
+        time.sleep(0.5)
+    except:
+        pass
     
-    # iframe에서 나오기
-    driver.switch_to.default_content()
-    print("글 업로드 완료!\n")
+    publish_button = WebDriverWait(driver, 10).until(
+        EC.presence_of_element_located((By.CSS_SELECTOR, ".publish_btn__m9KHH"))
+    )
+    driver.execute_script("arguments[0].click();", publish_button)
+    print("  - 발행 버튼 클릭 완료")
+    time.sleep(2)
+    
+    # 6. 발행 설정 (카테고리, 예약 발행)
+    print("발행 설정 중...")
+    time.sleep(1)
+    
+    select_category(category)
+    set_schedule_time(schedule_time)
+    
+    # 7. 발행 확인 버튼 클릭
+    print("발행 확인 버튼 클릭 중...")
+    try:
+        confirm_button = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.confirm_btn__WEaBq"))
+        )
+        driver.execute_script("arguments[0].click();", confirm_button)
+        print("  - 발행 확인 버튼 클릭 완료")
+    except Exception as e:
+        print(f"  - 발행 확인 버튼 처리 실패: {e}")
+    
+    time.sleep(3)
+    print("글 발행 완료!\n")
 
 def main():
     """메인 함수: 엑셀 파일 읽기 및 블로그 업로드"""
@@ -205,12 +310,14 @@ def main():
         max_row = ws.max_row
         blog_posts = []
         
-        for row in range(2, max_row + 1):  # 2행부터 시작 (1행은 헤더)
+        for row in range(2, max_row + 1):
             title = ws[f'A{row}'].value
             content = ws[f'B{row}'].value
+            category = ws[f'C{row}'].value
+            schedule_time = ws[f'D{row}'].value
             
-            if title and content:  # 제목과 본문이 모두 있는 경우만 추가
-                blog_posts.append((row, title, content))
+            if title and content:
+                blog_posts.append((row, title, content, category, schedule_time))
         
         if not blog_posts:
             print("처리할 블로그 글이 없습니다.")
@@ -222,13 +329,16 @@ def main():
         # 네이버 로그인 (한 번만)
         naver_login()
         
-        # 각 블로그 글 업로드
-        for row, title, content in blog_posts:
+        for row, title, content, category, schedule_time in blog_posts:
             try:
                 print(f"[{row}행] 블로그 글 업로드 시작")
                 print(f"  제목: {title}")
+                if category:
+                    print(f"  카테고리: {category}")
+                if schedule_time:
+                    print(f"  예약 발행: {schedule_time}")
                 
-                write_blog_post(title, content)
+                write_blog_post(title, content, category, schedule_time)
                 
                 print(f"[{row}행] 업로드 완료\n")
                 print("-" * 50 + "\n")

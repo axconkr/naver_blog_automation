@@ -17,8 +17,8 @@ if not GEMINI_API_KEY:
 # Gemini API 설정
 genai.configure(api_key=GEMINI_API_KEY)
 
-# 모델 설정 (gemini-1.5-pro)
-model = genai.GenerativeModel('gemini-1.5-pro')
+# 모델 설정
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 def generate_blog_content(main_keyword, sub_keyword, word_count_limit_per_paragraph=120, examples_stats_quotes=""):
     """
@@ -37,7 +37,7 @@ def generate_blog_content(main_keyword, sub_keyword, word_count_limit_per_paragr
 목표는 검색엔진과 사람 모두를 사로잡는 글을 작성하는 것입니다. 
 SEO 원칙에 따라 구조를 만들고, 그 안에 감각적이고 공감가는 스토리를 담아 네이버 1페이지에 노출되도록 합니다. 
 
-""" 실행 워크플로우
+=== 실행 워크플로우 ===
 1) 웹검색:
 - 주요 키워드와 세부 키워드로 반드시 검색한다.
 - 신뢰할 수 있는 출처 3~5개를 요약한다.
@@ -54,7 +54,7 @@ SEO 원칙에 따라 구조를 만들고, 그 안에 감각적이고 공감가�
 - 검색 요약 + 주요 키워드 + 세부 키워드 + 자동 추천된 필수 형태소를 기반으로 작성한다.
 - 추측 금지, 복붙 금지. 사실은 재구성하여 블로그 톤으로 풀어낸다.
 
-""" 글쓰기 규칙
+=== 글쓰기 규칙 ===
 1. 구조:
 - 글 전체는 '문제 상황 → 원인 분석 → 활용법/방법/팁 → FAQ → 마무리' 흐름을 따른다.
 - 내부 구조는 유지하지만 "문제/해결/가이드" 같은 메타어는 출력하지 않는다.
@@ -83,7 +83,7 @@ SEO 원칙에 따라 구조를 만들고, 그 안에 감각적이고 공감가�
 - 댓글 유도 문장을 포함한다.
 - 관련 해시태그 5~8개를 추천한다.
 
-''' 사용자 입력값
+=== 사용자 입력값 ===
 - 주요 키워드: {main_keyword}
 - 세부 키워드: {sub_keyword}
 - 원하는 글자 수: 500자 이내 (전체 글자 수, 각 단락은 {word_count_limit_per_paragraph}자 이내)

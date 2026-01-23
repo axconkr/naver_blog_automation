@@ -8,3 +8,5 @@ dist/
 build/
 *.spec
 .DS_Store
+app_log.txt
+~$*.xlsx
