@@ -95,6 +95,52 @@ class BlogPostCreator:
         matches.sort(key=lambda x: x['relevance_score'], reverse=True)
         return matches[:top_k]
 
+    def _hex_to_rgb(self, hex_color: str) -> dict:
+        """HEX 색상을 RGB로 변환"""
+        hex_color = hex_color.lstrip('#')
+        r = int(hex_color[0:2], 16) / 255.0
+        g = int(hex_color[2:4], 16) / 255.0
+        b = int(hex_color[4:6], 16) / 255.0
+        return {'red': r, 'green': g, 'blue': b}
+
+    def _find_bold_ranges(self, text: str) -> List[tuple]:
+        """**텍스트** 패턴에서 볼드 범위 찾기"""
+        import re
+        ranges = []
+        pattern = r'\*\*(.*?)\*\*'
+
+        offset = 0
+        for match in re.finditer(pattern, text):
+            # **를 제거한 실제 텍스트 위치
+            start = match.start() - offset
+            end = start + len(match.group(1))
+            ranges.append((start, end))
+            # ** 2개씩 제거되므로 offset 증가
+            offset += 4
+
+        return ranges
+
+    def _clean_bold_markers(self, text: str) -> str:
+        """**마커** 제거"""
+        import re
+        return re.sub(r'\*\*(.*?)\*\*', r'\1', text)
+
+    def _extract_drive_file_id(self, url: str) -> Optional[str]:
+        """Google Drive URL에서 파일 ID 추출"""
+        import re
+        patterns = [
+            r'/d/([a-zA-Z0-9_-]+)',
+            r'id=([a-zA-Z0-9_-]+)',
+            r'/file/d/([a-zA-Z0-9_-]+)'
+        ]
+
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1)
+
+        return None
+
     def authenticate(self):
         """구글 API 인증"""
         creds = None
@@ -250,10 +296,16 @@ class BlogPostCreator:
         return doc_id
 
     def write_to_document(self, doc_id: str, blog_content: dict):
-        """문서에 블로그 콘텐츠 작성"""
+        """문서에 블로그 콘텐츠 작성 (스타일 적용)"""
         print(f"\n✍️ 문서 작성 중...")
 
         requests = []
+
+        # 블로그 스타일 가져오기
+        formatting = self.blog_skills.get('formatting_rules', {})
+        font_family = formatting.get('default_font_family', '나눔고딕')
+        font_size = int(formatting.get('default_font_size', '13px').replace('px', ''))
+        text_color = formatting.get('default_text_color', '#444444')
 
         # 제목은 자동으로 설정되므로 본문부터 시작
         index = 1
@@ -262,42 +314,115 @@ class BlogPostCreator:
             if section['type'] == 'text':
                 content = section['content']
 
-                # 볼드 처리 (**텍스트**)
-                # 간단한 처리: 일단 텍스트만 삽입
+                # 볼드 범위 찾기 (** 제거 전)
+                bold_ranges = self._find_bold_ranges(content)
+
+                # ** 마커 제거한 깨끗한 텍스트
+                clean_content = self._clean_bold_markers(content)
+
+                # 텍스트 삽입
                 requests.append({
                     'insertText': {
                         'location': {'index': index},
-                        'text': content + '\n\n'
+                        'text': clean_content + '\n\n'
                     }
                 })
 
-                # 볼드 처리는 향후 구현
-                index += len(content) + 2
+                text_length = len(clean_content)
+
+                # 기본 스타일 적용
+                requests.append({
+                    'updateTextStyle': {
+                        'range': {
+                            'startIndex': index,
+                            'endIndex': index + text_length
+                        },
+                        'textStyle': {
+                            'weightedFontFamily': {
+                                'fontFamily': font_family
+                            },
+                            'fontSize': {
+                                'magnitude': font_size,
+                                'unit': 'PT'
+                            },
+                            'foregroundColor': {
+                                'color': {
+                                    'rgbColor': self._hex_to_rgb(text_color)
+                                }
+                            }
+                        },
+                        'fields': 'weightedFontFamily,fontSize,foregroundColor'
+                    }
+                })
+
+                # 볼드 처리
+                for start, end in bold_ranges:
+                    requests.append({
+                        'updateTextStyle': {
+                            'range': {
+                                'startIndex': index + start,
+                                'endIndex': index + end
+                            },
+                            'textStyle': {
+                                'bold': True
+                            },
+                            'fields': 'bold'
+                        }
+                    })
+
+                index += text_length + 2
 
             elif section['type'] == 'image_placeholder':
                 # 이미지 추천 (인덱스가 있으면)
                 suggested_images = self._suggest_images_for_section(
-                    section.get('description', ''), top_k=3
+                    section.get('description', ''), top_k=1
                 )
 
-                if suggested_images:
-                    # 추천 이미지 정보 포함
-                    img_text = f"\n[이미지 위치: {section['description']}]\n"
-                    img_text += "추천 이미지:\n"
-                    for i, img in enumerate(suggested_images[:3], 1):
-                        img_text += f"{i}. {img.get('filename', 'N/A')} (점수: {img.get('relevance_score', 0)})\n"
-                        img_text += f"   {img.get('web_view_link', 'N/A')}\n"
-                    img_text += "\n"
-                else:
-                    img_text = f"\n[이미지 위치: {section['description']}]\n\n"
+                if suggested_images and len(suggested_images) > 0:
+                    # 첫 번째 추천 이미지 삽입
+                    top_image = suggested_images[0]
+                    image_url = top_image.get('web_content_link') or top_image.get('web_view_link')
 
-                requests.append({
-                    'insertText': {
-                        'location': {'index': index},
-                        'text': img_text
-                    }
-                })
-                index += len(img_text)
+                    if image_url and 'drive.google.com' in image_url:
+                        # Google Drive 이미지 URL을 직접 접근 가능한 형식으로 변환
+                        file_id = self._extract_drive_file_id(image_url)
+                        if file_id:
+                            direct_url = f"https://drive.google.com/uc?export=view&id={file_id}"
+
+                            # 이미지 삽입
+                            requests.append({
+                                'insertInlineImage': {
+                                    'location': {'index': index},
+                                    'uri': direct_url,
+                                    'objectSize': {
+                                        'width': {
+                                            'magnitude': 400,
+                                            'unit': 'PT'
+                                        }
+                                    }
+                                }
+                            })
+                            index += 1  # 이미지는 1 character 차지
+                    else:
+                        # 이미지 URL이 없으면 placeholder
+                        img_text = f"\n[이미지: {section['description']}]\n\n"
+                        requests.append({
+                            'insertText': {
+                                'location': {'index': index},
+                                'text': img_text
+                            }
+                        })
+                        index += len(img_text)
+                else:
+                    # 추천 이미지 없으면 placeholder
+                    img_text = f"\n[이미지: {section['description']}]\n\n"
+                    requests.append({
+                        'insertText': {
+                            'location': {'index': index},
+                            'text': img_text
+                        }
+                    })
+                    index += len(img_text)
 
         # 문서 업데이트
         if requests:
