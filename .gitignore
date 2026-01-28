@@ -10,3 +10,13 @@ build/
 .DS_Store
 app_log.txt
 ~$*.xlsx
+
+# Google OAuth credentials
+credentials.json
+token_docs.pickle
+token.pickle
+
+# Output directories
+output/
+images/
+images_extracted/

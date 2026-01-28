@@ -1,0 +1,85 @@
+{
+  "blog_id": "chikkqueen",
+  "analyzed_post_url": "https://blog.naver.com/chikkqueen/223992802848",
+  "post_title": "닭 도매, 가격보다 더 중요한 건 ‘믿고 맡길 수 있느냐’ 아닐까요?",
+  "raw_analysis": {
+    "font_sizes": [
+      "13px",
+      "12px",
+      "11px",
+      "14px",
+      "0px",
+      "16px"
+    ],
+    "font_families": [
+      "Helvetica-Light",
+      "나눔고딕",
+      "tahoma",
+      "Helvetica"
+    ],
+    "colors": [
+      "rgba(155, 155, 155, 1)",
+      "rgba(68, 68, 68, 1)",
+      "rgba(102, 102, 102, 1)",
+      "rgba(51, 51, 51, 1)",
+      "rgba(0, 0, 0, 1)"
+    ],
+    "bg_colors": [
+      "rgba(255, 255, 255, 1)"
+    ],
+    "text_aligns": [
+      "left",
+      "start",
+      "center"
+    ],
+    "line_heights": [
+      "17px",
+      "18px",
+      "24px",
+      "20px",
+      "28px",
+      "21px",
+      "0px"
+    ],
+    "has_bold": true,
+    "has_italic": false,
+    "has_underline": false,
+    "has_highlight": false,
+    "image_count": 106,
+    "component_types": [
+      "text",
+      "image",
+      "text",
+      "text",
+      "image",
+      "image",
+      "text",
+      "text",
+      "text",
+      "text",
+      "image",
+      "text",
+      "text",
+      "image",
+      "text"
+    ]
+  },
+  "style_skills": {
+    "blog_id": "chikkqueen",
+    "blog_name": "chikkqueen",
+    "style_profile": {
+      "tone": "분석 필요",
+      "formality": 3,
+      "emoji_usage": "분석 필요"
+    },
+    "formatting_rules": {
+      "default_font_size": "13px",
+      "default_text_color": "#000000",
+      "text_align": "left"
+    },
+    "special_characteristics": [
+      "자동 분석 실패 - 수동 검토 필요"
+    ]
+  },
+  "generated_at": "2026-01-29T00:40:19.649008"
+}

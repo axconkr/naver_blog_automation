@@ -1,0 +1,74 @@
+{
+  "blog_id": "1234ssem",
+  "blog_name": "일승푸드 - 대전 10호닭 도매",
+  "analyzed_post_url": "https://blog.naver.com/1234ssem",
+  "post_title": "대전 10호닭 도매, 수율과 탄력 모두 갖춘 1kg 하림육을 조각·염지까지 맞춤 가공해드립니다",
+
+  "style_profile": {
+    "tone": "전문적이고 구체적인",
+    "formality": 4,
+    "emoji_usage": "없음",
+    "overall_impression": "지역 기반 B2B 도매 전문 블로그"
+  },
+
+  "formatting_rules": {
+    "default_font_size": "12px",
+    "default_font_family": "나눔고딕",
+    "default_text_color": "#444444",
+    "default_line_height": "1.7",
+    "text_align": "left",
+    "paragraph_spacing": "medium"
+  },
+
+  "emphasis_style": {
+    "uses_bold": true,
+    "uses_italic": false,
+    "uses_underline": false,
+    "uses_color_highlight": false,
+    "highlight_color": null,
+    "bold_frequency": "보통"
+  },
+
+  "structure_patterns": {
+    "uses_headings": false,
+    "heading_style": null,
+    "uses_dividers": false,
+    "uses_quotes": false,
+    "uses_lists": false,
+    "content_flow": "이미지와 텍스트 균형"
+  },
+
+  "image_style": {
+    "image_frequency": "많음",
+    "image_count_avg": 80,
+    "image_placement": "중간중간",
+    "image_alignment": "center",
+    "uses_captions": false,
+    "image_to_text_ratio": "균형적"
+  },
+
+  "opening_pattern": "지역+제품명으로 시작, 구체적 스펙 제시",
+  "closing_pattern": "서비스 범위 및 연락 정보",
+
+  "special_characteristics": [
+    "다른 블로그들보다 폰트가 약간 작음 (12px)",
+    "지역 키워드 강조 (대전)",
+    "제품 스펙 구체적 명시",
+    "전체적으로 같은 계열 블로그로 보임"
+  ],
+
+  "naver_editor_components": {
+    "text_component": "보통 사용",
+    "image_component": "자주 사용",
+    "video_component": "사용 안함",
+    "divider_component": "사용 안함",
+    "quote_component": "사용 안함",
+    "table_component": "사용 안함"
+  },
+
+  "content_strategy": {
+    "primary_purpose": "지역 도매 고객 확보",
+    "target_audience": "대전 지역 치킨집, 식당",
+    "key_message": "품질과 맞춤 가공 서비스"
+  }
+}

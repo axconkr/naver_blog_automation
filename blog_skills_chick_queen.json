@@ -1,0 +1,86 @@
+{
+  "blog_id": "chick_queen",
+  "analyzed_post_url": "https://blog.naver.com/chick_queen/224148820167",
+  "post_title": "닭도리육 도매, 양념 잘 배는 절단닭·조각닭 바로 쓰는 일승푸드",
+  "raw_analysis": {
+    "font_sizes": [
+      "13px",
+      "12px",
+      "11px",
+      "14px",
+      "0px",
+      "16px"
+    ],
+    "font_families": [
+      "Helvetica-Light",
+      "나눔고딕",
+      "tahoma",
+      "Helvetica"
+    ],
+    "colors": [
+      "rgba(152, 152, 152, 1)",
+      "rgba(155, 155, 155, 1)",
+      "rgba(68, 68, 68, 1)",
+      "rgba(102, 102, 102, 1)",
+      "rgba(51, 51, 51, 1)",
+      "rgba(0, 0, 0, 1)"
+    ],
+    "bg_colors": [
+      "rgba(255, 255, 255, 1)"
+    ],
+    "text_aligns": [
+      "left",
+      "start",
+      "center"
+    ],
+    "line_heights": [
+      "17px",
+      "18px",
+      "24px",
+      "20px",
+      "28px",
+      "21px",
+      "0px"
+    ],
+    "has_bold": true,
+    "has_italic": false,
+    "has_underline": false,
+    "has_highlight": false,
+    "image_count": 112,
+    "component_types": [
+      "text",
+      "image",
+      "text",
+      "image",
+      "text",
+      "text",
+      "image",
+      "text",
+      "text",
+      "text",
+      "image",
+      "text",
+      "image",
+      "text",
+      "text"
+    ]
+  },
+  "style_skills": {
+    "blog_id": "chick_queen",
+    "blog_name": "chick_queen",
+    "style_profile": {
+      "tone": "분석 필요",
+      "formality": 3,
+      "emoji_usage": "분석 필요"
+    },
+    "formatting_rules": {
+      "default_font_size": "13px",
+      "default_text_color": "#000000",
+      "text_align": "left"
+    },
+    "special_characteristics": [
+      "자동 분석 실패 - 수동 검토 필요"
+    ]
+  },
+  "generated_at": "2026-01-29T00:40:42.842767"
+}

@@ -1,0 +1,74 @@
+{
+  "blog_id": "chick_king",
+  "blog_name": "치킨킹 - 치킨 창업 전문",
+  "analyzed_post_url": "https://blog.naver.com/chick_king/224148907959",
+  "post_title": "치킨무료창업, 브랜드 없이도 창업 가능한 이유는 모든 준비가 세팅된 일승푸드에 있습니다",
+
+  "style_profile": {
+    "tone": "친근하고 설득력 있는",
+    "formality": 3,
+    "emoji_usage": "없음",
+    "overall_impression": "창업 컨설팅 블로그, 실용적이고 구체적인 정보 제공"
+  },
+
+  "formatting_rules": {
+    "default_font_size": "13px",
+    "default_font_family": "나눔고딕",
+    "default_text_color": "#444444",
+    "default_line_height": "1.8",
+    "text_align": "left",
+    "paragraph_spacing": "medium"
+  },
+
+  "emphasis_style": {
+    "uses_bold": true,
+    "uses_italic": false,
+    "uses_underline": false,
+    "uses_color_highlight": false,
+    "highlight_color": null,
+    "bold_frequency": "자주 (핵심 문구)"
+  },
+
+  "structure_patterns": {
+    "uses_headings": false,
+    "heading_style": null,
+    "uses_dividers": false,
+    "uses_quotes": false,
+    "uses_lists": false,
+    "content_flow": "이미지와 설명 교차, 스토리텔링 형식"
+  },
+
+  "image_style": {
+    "image_frequency": "매우 많음",
+    "image_count_avg": 108,
+    "image_placement": "전체",
+    "image_alignment": "center",
+    "uses_captions": false,
+    "image_to_text_ratio": "이미지 위주"
+  },
+
+  "opening_pattern": "핵심 가치 제안으로 시작, 고객의 관심사 자극",
+  "closing_pattern": "행동 유도 (문의, 상담)",
+
+  "special_characteristics": [
+    "이미지가 매우 많음 (100개 이상)",
+    "창업 정보와 제품 소개 혼합",
+    "실용적인 비즈니스 정보 제공",
+    "chikkqueen과 거의 동일한 스타일"
+  ],
+
+  "naver_editor_components": {
+    "text_component": "자주 사용",
+    "image_component": "매우 자주 사용",
+    "video_component": "사용 안함",
+    "divider_component": "사용 안함",
+    "quote_component": "사용 안함",
+    "table_component": "사용 안함"
+  },
+
+  "content_strategy": {
+    "primary_purpose": "치킨 창업 컨설팅 및 제품 소개",
+    "target_audience": "치킨 창업 예정자",
+    "key_message": "무료 창업, 브랜드 없이도 가능"
+  }
+}

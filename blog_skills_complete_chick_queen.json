@@ -1,0 +1,74 @@
+{
+  "blog_id": "chick_queen",
+  "blog_name": "치킨퀸 - 닭도리육 도매",
+  "analyzed_post_url": "https://blog.naver.com/chick_queen/224148820167",
+  "post_title": "닭도리육 도매, 양념 잘 배는 절단닭·조각닭 바로 쓰는 일승푸드",
+
+  "style_profile": {
+    "tone": "전문적이고 신뢰감 있는",
+    "formality": 4,
+    "emoji_usage": "없음",
+    "overall_impression": "B2B 제품 전문 블로그"
+  },
+
+  "formatting_rules": {
+    "default_font_size": "13px",
+    "default_font_family": "나눔고딕",
+    "default_text_color": "#444444",
+    "default_line_height": "1.8",
+    "text_align": "left",
+    "paragraph_spacing": "medium"
+  },
+
+  "emphasis_style": {
+    "uses_bold": true,
+    "uses_italic": false,
+    "uses_underline": false,
+    "uses_color_highlight": false,
+    "highlight_color": null,
+    "bold_frequency": "자주"
+  },
+
+  "structure_patterns": {
+    "uses_headings": false,
+    "heading_style": null,
+    "uses_dividers": false,
+    "uses_quotes": false,
+    "uses_lists": false,
+    "content_flow": "이미지 중심, 제품 설명"
+  },
+
+  "image_style": {
+    "image_frequency": "매우 많음",
+    "image_count_avg": 100,
+    "image_placement": "전체",
+    "image_alignment": "center",
+    "uses_captions": false,
+    "image_to_text_ratio": "이미지 위주"
+  },
+
+  "opening_pattern": "제품명으로 시작, 핵심 특장점 제시",
+  "closing_pattern": "제품 상세 정보로 마무리",
+
+  "special_characteristics": [
+    "chikkqueen, chick_king과 동일 계열로 추정",
+    "이미지 중심 구성",
+    "제품 상세 사진 다량 사용",
+    "텍스트는 최소화"
+  ],
+
+  "naver_editor_components": {
+    "text_component": "보통 사용",
+    "image_component": "매우 자주 사용",
+    "video_component": "사용 안함",
+    "divider_component": "사용 안함",
+    "quote_component": "사용 안함",
+    "table_component": "사용 안함"
+  },
+
+  "content_strategy": {
+    "primary_purpose": "제품 도매 정보 제공",
+    "target_audience": "B2B 식자재 구매자",
+    "key_message": "품질과 가공 편의성"
+  }
+}

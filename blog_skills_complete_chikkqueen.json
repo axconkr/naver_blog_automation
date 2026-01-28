@@ -1,0 +1,75 @@
+{
+  "blog_id": "chikkqueen",
+  "blog_name": "치킨퀸 - 닭 도매 전문",
+  "analyzed_post_url": "https://blog.naver.com/chikkqueen/223992802848",
+  "post_title": "닭 도매, 가격보다 더 중요한 건 '믿고 맡길 수 있느냐' 아닐까요?",
+
+  "style_profile": {
+    "tone": "신뢰감 있고 전문적인",
+    "formality": 4,
+    "emoji_usage": "없음",
+    "overall_impression": "B2B 비즈니스 블로그, 전문성과 신뢰를 강조"
+  },
+
+  "formatting_rules": {
+    "default_font_size": "13px",
+    "default_font_family": "나눔고딕",
+    "default_text_color": "#444444",
+    "default_line_height": "1.8",
+    "text_align": "left",
+    "paragraph_spacing": "medium"
+  },
+
+  "emphasis_style": {
+    "uses_bold": true,
+    "uses_italic": false,
+    "uses_underline": false,
+    "uses_color_highlight": false,
+    "highlight_color": null,
+    "bold_frequency": "자주 (제목, 키워드)"
+  },
+
+  "structure_patterns": {
+    "uses_headings": false,
+    "heading_style": null,
+    "uses_dividers": false,
+    "uses_quotes": false,
+    "uses_lists": false,
+    "content_flow": "이미지 중심, 짧은 텍스트 설명"
+  },
+
+  "image_style": {
+    "image_frequency": "매우 많음",
+    "image_count_avg": 100,
+    "image_placement": "전체 (텍스트와 이미지 교차)",
+    "image_alignment": "center",
+    "uses_captions": false,
+    "image_to_text_ratio": "이미지 위주"
+  },
+
+  "opening_pattern": "제목에서 핵심 질문 던지기, 바로 본론 시작",
+  "closing_pattern": "제품/서비스 소개로 자연스럽게 마무리",
+
+  "special_characteristics": [
+    "이미지가 매우 많음 (100개 이상)",
+    "텍스트는 짧고 간결",
+    "제품 이미지 중심의 비주얼 블로그",
+    "색상은 주로 회색 톤 사용",
+    "볼드체로 중요 키워드 강조"
+  ],
+
+  "naver_editor_components": {
+    "text_component": "자주 사용",
+    "image_component": "매우 자주 사용",
+    "video_component": "사용 안함",
+    "divider_component": "사용 안함",
+    "quote_component": "사용 안함",
+    "table_component": "사용 안함"
+  },
+
+  "content_strategy": {
+    "primary_purpose": "제품 소개 및 비즈니스 신뢰 구축",
+    "target_audience": "B2B 고객 (식당, 치킨집 사장님)",
+    "key_message": "품질과 신뢰성"
+  }
+}
