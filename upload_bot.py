@@ -9,11 +9,20 @@ from selenium.webdriver.common.action_chains import ActionChains
 from openpyxl import load_workbook
 from dotenv import load_dotenv
 from datetime import datetime
+from docx import Document
+from utils import extract_content_sequence, ensure_english_filenames, sanitize_filename
+import zipfile
 import pyperclip
+import pyautogui
 import platform
 import time
 import os
 import glob
+import re
+import tempfile
+
+pyautogui.FAILSAFE = True
+pyautogui.PAUSE = 0.3
 
 # .env 파일에서 환경 변수 로드
 load_dotenv()
@@ -187,44 +196,119 @@ def set_schedule_time(schedule_time_str):
         print(f"    - 예약 발행 설정 실패: {e}")
 
 
-def write_blog_post(title, content, category=None, schedule_time=None):
-    """블로그 글쓰기 페이지에 제목과 본문을 입력하고 발행"""
-    # 블로그 글쓰기 페이지로 이동
-    print("블로그 글쓰기 페이지로 이동 중...")
+def copy_image_to_clipboard(image_path):
+    import subprocess
+    
+    if platform.system() == 'Darwin':
+        script = f'''
+        use framework "AppKit"
+        use scripting additions
+        
+        set pb to current application's NSPasteboard's generalPasteboard()
+        pb's clearContents()
+        
+        set img to current application's NSImage's alloc()'s initWithContentsOfFile:"{image_path}"
+        pb's writeObjects:{{img}}
+        
+        return "OK"
+        '''
+        try:
+            result = subprocess.run(['osascript', '-e', script], capture_output=True, text=True)
+            return result.returncode == 0
+        except:
+            return False
+    elif platform.system() == 'Windows':
+        script = f'''
+        Add-Type -AssemblyName System.Windows.Forms
+        $image = [System.Drawing.Image]::FromFile("{image_path}")
+        [System.Windows.Forms.Clipboard]::SetImage($image)
+        '''
+        try:
+            subprocess.run(['powershell', '-Command', script], check=True, capture_output=True)
+            return True
+        except:
+            return False
+    
+    return False
+
+
+def upload_image(image_path):
+    if not image_path or not os.path.exists(image_path):
+        print(f"  - Image not found: {image_path}")
+        return False
+    
+    abs_path = os.path.abspath(image_path)
+    print(f"  Uploading: {os.path.basename(image_path)}")
+    
+    try:
+        content_area = driver.find_element(By.CSS_SELECTOR, ".se-component-content")
+        driver.execute_script("arguments[0].click();", content_area)
+        time.sleep(0.3)
+        
+        if copy_image_to_clipboard(abs_path):
+            ActionChains(driver).key_down(PASTE_KEY).send_keys('v').key_up(PASTE_KEY).perform()
+            time.sleep(3)
+            print(f"    - Upload complete (clipboard)")
+            return True
+        else:
+            print(f"    - Clipboard copy failed, trying file dialog...")
+            image_btn = WebDriverWait(driver, 5).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button[data-name='image']"))
+            )
+            driver.execute_script("arguments[0].click();", image_btn)
+            time.sleep(2)
+            
+            if platform.system() == 'Darwin':
+                pyautogui.hotkey('command', 'shift', 'g')
+                time.sleep(1)
+                pyperclip.copy(abs_path)
+                pyautogui.hotkey('command', 'v')
+                time.sleep(0.5)
+                pyautogui.press('enter')
+                time.sleep(1)
+                pyautogui.press('enter')
+                time.sleep(3)
+            else:
+                pyperclip.copy(abs_path)
+                pyautogui.hotkey('ctrl', 'v')
+                time.sleep(0.5)
+                pyautogui.press('enter')
+                time.sleep(3)
+            
+            print(f"    - Upload complete (dialog)")
+            return True
+    except Exception as e:
+        print(f"    - Upload failed: {e}")
+        try:
+            pyautogui.press('escape')
+        except:
+            pass
+        time.sleep(0.5)
+        return False
+
+
+def write_blog_post(title, content, category=None, schedule_time=None, image_paths=None, content_sequence=None):
+    print("Navigate to blog write page...")
     driver.get("https://blog.naver.com/GoBlogWrite.naver")
     time.sleep(2)
     
-    # 1. iframe 전환 (#mainFrame)
-    print("iframe으로 전환 중...")
+    print("Switch to iframe...")
     main_frame = WebDriverWait(driver, 10).until(
         EC.presence_of_element_located((By.ID, "mainFrame"))
     )
     driver.switch_to.frame(main_frame)
     time.sleep(1)
     
-    # 2. 팝업 닫기 처리
-    print("팝업 닫기 처리 중...")
+    print("Close popups...")
+    for selector in [".se-popup-button-cancel", ".se-help-panel-close-button"]:
+        try:
+            el = driver.find_element(By.CSS_SELECTOR, selector)
+            el.click()
+            time.sleep(0.5)
+        except:
+            pass
     
-    # .se-popup-button-cancel 요소가 있으면 클릭
-    try:
-        cancel_button = driver.find_element(By.CSS_SELECTOR, ".se-popup-button-cancel")
-        cancel_button.click()
-        print("  - 팝업 취소 버튼 클릭 완료")
-        time.sleep(0.5)
-    except:
-        print("  - 팝업 취소 버튼 없음 (무시)")
-    
-    # .se-help-panel-close-button 요소가 있으면 클릭
-    try:
-        close_button = driver.find_element(By.CSS_SELECTOR, ".se-help-panel-close-button")
-        close_button.click()
-        print("  - 도움말 패널 닫기 버튼 클릭 완료")
-        time.sleep(0.5)
-    except:
-        print("  - 도움말 패널 닫기 버튼 없음 (무시)")
-    
-    # 3. 제목 입력 (클립보드 붙여넣기 방식)
-    print(f"제목 입력 중: {title}")
+    print(f"Input title: {title}")
     title_element = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.CSS_SELECTOR, ".se-section-documentTitle"))
     )
@@ -238,33 +322,52 @@ def write_blog_post(title, content, category=None, schedule_time=None):
     pyperclip.copy(str(title))
     ActionChains(driver).key_down(PASTE_KEY).send_keys('v').key_up(PASTE_KEY).perform()
     time.sleep(0.5)
-    print(f"  - 제목 입력 완료")
     
-    # 4. 본문 입력 (클립보드 붙여넣기 방식)
-    print("본문 입력 중...")
-    content_element = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, ".se-section-text"))
-    )
-    content_element.click()
-    time.sleep(0.5)
+    if content_sequence:
+        print(f"Input content sequence ({len(content_sequence)} items)...")
+        for i, item in enumerate(content_sequence):
+            if item["type"] == "text":
+                print(f"  [{i+1}] Text: {len(item['content'])} chars")
+                text_paragraph = driver.find_element(By.CSS_SELECTOR, ".se-section-text .se-text-paragraph")
+                driver.execute_script("arguments[0].click();", text_paragraph)
+                time.sleep(0.3)
+                pyperclip.copy(item["content"])
+                ActionChains(driver).key_down(PASTE_KEY).send_keys('v').key_up(PASTE_KEY).perform()
+                ActionChains(driver).send_keys(Keys.ENTER).perform()
+                time.sleep(0.5)
+            elif item["type"] == "image":
+                print(f"  [{i+1}] Image: {os.path.basename(item['path'])}")
+                upload_image(item["path"])
+                time.sleep(1)
+    else:
+        print("Input content...")
+        content_element = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, ".se-section-text"))
+        )
+        content_element.click()
+        time.sleep(0.5)
+        
+        text_paragraph = driver.find_element(By.CSS_SELECTOR, ".se-section-text .se-text-paragraph")
+        text_paragraph.click()
+        time.sleep(0.3)
+        
+        content_str = str(content) if content else ""
+        pyperclip.copy(content_str)
+        ActionChains(driver).key_down(PASTE_KEY).send_keys('v').key_up(PASTE_KEY).perform()
+        time.sleep(1)
+        
+        if image_paths:
+            print(f"Upload images ({len(image_paths)})...")
+            for i, img_path in enumerate(image_paths):
+                if img_path and os.path.exists(img_path):
+                    print(f"  [{i+1}/{len(image_paths)}] {os.path.basename(img_path)}")
+                    upload_image(img_path)
+                    time.sleep(1)
     
-    text_paragraph = driver.find_element(By.CSS_SELECTOR, ".se-section-text .se-text-paragraph")
-    text_paragraph.click()
-    time.sleep(0.3)
-    
-    content_str = str(content) if content else ""
-    pyperclip.copy(content_str)
-    ActionChains(driver).key_down(PASTE_KEY).send_keys('v').key_up(PASTE_KEY).perform()
-    time.sleep(1)
-    print(f"  - 본문 입력 완료")
-    time.sleep(1)
-    
-    # 5. 발행 버튼 클릭 전 도움말 패널 닫기
-    print("발행 버튼 클릭 중...")
+    print("Click publish button...")
     try:
         help_close = driver.find_element(By.CSS_SELECTOR, ".se-help-panel-close-button")
         help_close.click()
-        print("  - 도움말 패널 닫기 완료")
         time.sleep(0.5)
     except:
         pass
@@ -273,82 +376,164 @@ def write_blog_post(title, content, category=None, schedule_time=None):
         EC.presence_of_element_located((By.CSS_SELECTOR, ".publish_btn__m9KHH"))
     )
     driver.execute_script("arguments[0].click();", publish_button)
-    print("  - 발행 버튼 클릭 완료")
     time.sleep(2)
     
-    # 6. 발행 설정 (카테고리, 예약 발행)
-    print("발행 설정 중...")
+    print("Configure publish settings...")
     time.sleep(1)
     
     select_category(category)
     set_schedule_time(schedule_time)
     
-    # 7. 발행 확인 버튼 클릭
-    print("발행 확인 버튼 클릭 중...")
+    print("Confirm publish...")
     try:
         confirm_button = WebDriverWait(driver, 5).until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, "button.confirm_btn__WEaBq"))
         )
         driver.execute_script("arguments[0].click();", confirm_button)
-        print("  - 발행 확인 버튼 클릭 완료")
     except Exception as e:
-        print(f"  - 발행 확인 버튼 처리 실패: {e}")
+        print(f"  - Confirm failed: {e}")
     
     time.sleep(3)
-    print("글 발행 완료!\n")
+    print("Post published!\n")
+
+def extract_from_word(docx_path, temp_dir):
+    doc = Document(docx_path)
+    content = '\n'.join([p.text for p in doc.paragraphs if p.text.strip()])
+    
+    image_paths = []
+    try:
+        with zipfile.ZipFile(docx_path, 'r') as z:
+            for i, name in enumerate(z.namelist()):
+                if name.startswith('word/media/'):
+                    ext = os.path.splitext(name)[1]
+                    img_filename = f"img_{i:03d}{ext}"
+                    img_path = os.path.join(temp_dir, img_filename)
+                    with z.open(name) as src, open(img_path, 'wb') as dst:
+                        dst.write(src.read())
+                    image_paths.append(img_path)
+    except:
+        pass
+    
+    return content, image_paths
+
+
+def extract_from_word_sequence(docx_path, temp_dir):
+    return extract_content_sequence(docx_path, temp_dir)
+
+
+def find_word_file(output_dir, title, row_num=None):
+    if not os.path.exists(output_dir):
+        return None
+    
+    if row_num is not None:
+        new_format = os.path.join(output_dir, f"post_{row_num:03d}.docx")
+        if os.path.exists(new_format):
+            return new_format
+    
+    for f in os.listdir(output_dir):
+        if f.endswith('.docx') and not f.startswith('test_'):
+            name = re.sub(r'^\d+_', '', f.replace('.docx', ''))
+            if title in name or name in title:
+                return os.path.join(output_dir, f)
+    return None
+
 
 def main():
-    """메인 함수: 엑셀 파일 읽기 및 블로그 업로드"""
     try:
-        # blog+날짜.xlsx 파일 찾기
         excel_file = find_blog_excel_file()
-        print(f"엑셀 파일 열기: {excel_file}")
+        print(f"Open excel: {excel_file}")
         wb = load_workbook(excel_file)
         ws = wb.active
         
-        # 2행부터 마지막 행까지 데이터 읽기
-        max_row = ws.max_row
+        if ws is None:
+            print("No active worksheet found")
+            wb.close()
+            return
+        
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        output_dir = os.path.join(base_dir, "output")
+        images_dir = os.path.join(base_dir, "images")
+        temp_dir = tempfile.mkdtemp()
+        
+        ensure_english_filenames(output_dir)
+        ensure_english_filenames(images_dir)
+        
+        print(f"Output folder: {output_dir}")
+        if os.path.exists(output_dir):
+            docx_files = [f for f in os.listdir(output_dir) if f.endswith('.docx')]
+            print(f"Word files: {len(docx_files)}")
+        
+        max_row = ws.max_row or 1
         blog_posts = []
         
         for row in range(2, max_row + 1):
             title = ws[f'A{row}'].value
-            content = ws[f'B{row}'].value
             category = ws[f'C{row}'].value
             schedule_time = ws[f'D{row}'].value
             
-            if title and content:
-                blog_posts.append((row, title, content, category, schedule_time))
+            if not title:
+                continue
+            
+            word_file = find_word_file(output_dir, str(title), row - 1)
+            content_sequence = None
+            content = None
+            image_paths = []
+            
+            if word_file and os.path.exists(word_file):
+                print(f"[Row {row}] Word file: {os.path.basename(word_file)}")
+                content_sequence = extract_from_word_sequence(word_file, temp_dir)
+                text_items = [item["content"] for item in content_sequence if item["type"] == "text"]
+                content = '\n'.join(text_items)
+            else:
+                content = ws[f'B{row}'].value
+                image_paths_str = ws[f'E{row}'].value
+                if image_paths_str:
+                    for p in str(image_paths_str).split(','):
+                        p = p.strip()
+                        if os.path.exists(p):
+                            image_paths.append(p)
+                else:
+                    pattern = os.path.join(images_dir, f"section_{row-1}_*.png")
+                    found = glob.glob(pattern)
+                    if found:
+                        image_paths = sorted(found)
+            
+            if title and (content or content_sequence):
+                blog_posts.append((row, title, content, category, schedule_time, image_paths, content_sequence))
         
         if not blog_posts:
-            print("처리할 블로그 글이 없습니다.")
+            print("No blog posts to process.")
             wb.close()
             return
         
-        print(f"총 {len(blog_posts)}개의 블로그 글을 업로드합니다.\n")
+        print(f"Total {len(blog_posts)} posts to upload.\n")
         
-        # 네이버 로그인 (한 번만)
         naver_login()
         
-        for row, title, content, category, schedule_time in blog_posts:
+        for row, title, content, category, schedule_time, image_paths, content_sequence in blog_posts:
             try:
-                print(f"[{row}행] 블로그 글 업로드 시작")
-                print(f"  제목: {title}")
+                print(f"[Row {row}] Start upload")
+                print(f"  Title: {title}")
                 if category:
-                    print(f"  카테고리: {category}")
+                    print(f"  Category: {category}")
                 if schedule_time:
-                    print(f"  예약 발행: {schedule_time}")
+                    print(f"  Schedule: {schedule_time}")
+                if content_sequence:
+                    img_count = len([i for i in content_sequence if i["type"] == "image"])
+                    print(f"  Sequence: {len(content_sequence)} items, {img_count} images")
+                elif image_paths:
+                    print(f"  Images: {len(image_paths)}")
                 
-                write_blog_post(title, content, category, schedule_time)
+                write_blog_post(title, content, category, schedule_time, image_paths, content_sequence)
                 
-                print(f"[{row}행] 업로드 완료\n")
+                print(f"[Row {row}] Upload complete\n")
                 print("-" * 50 + "\n")
                 
             except Exception as e:
-                print(f"[{row}행] 오류 발생: {e}")
+                print(f"[Row {row}] Error: {e}")
                 import traceback
                 traceback.print_exc()
                 print("-" * 50 + "\n")
-                # iframe에서 나오기 (오류 발생 시)
                 try:
                     driver.switch_to.default_content()
                 except:
@@ -356,7 +541,7 @@ def main():
                 continue
         
         wb.close()
-        print("모든 블로그 글 업로드 완료!")
+        print("All posts uploaded!")
         
     except Exception as e:
         print(f"오류 발생: {e}")
