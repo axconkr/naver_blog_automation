@@ -16,6 +16,7 @@ from googleapiclient.discovery import build
 import pickle
 from anthropic import Anthropic
 from dotenv import load_dotenv
+from typing import Dict, List, Optional
 
 load_dotenv()
 
@@ -29,25 +30,70 @@ SCOPES = [
 class BlogPostCreator:
     """블로그 포스트 생성기"""
 
-    def __init__(self, blog_skills_path: str):
+    def __init__(self, blog_skills_path: str, image_index_path: str = None):
         self.blog_skills = self.load_blog_skills(blog_skills_path)
         self.docs_service = None
         self.drive_service = None
+        self.image_index = None
+        self.image_index_path = image_index_path
 
         # Claude (Anthropic) 설정
-        # 환경 변수에서 직접 가져오거나, 여기에 직접 설정
         anthropic_api_key = os.environ.get('ANTHROPIC_API_KEY')
         if not anthropic_api_key:
-            # Claude Code를 사용 중이므로 API 키가 자동으로 설정될 수 있음
-            # 없으면 여기에 직접 입력
             print("⚠️ ANTHROPIC_API_KEY가 설정되지 않았습니다")
             print("   코드에 직접 API 키를 입력하거나 환경 변수를 설정하세요")
         self.claude = Anthropic(api_key=anthropic_api_key) if anthropic_api_key else None
+
+        # 이미지 인덱스 로드 (있으면)
+        if image_index_path and os.path.exists(image_index_path):
+            self._load_image_index()
 
     def load_blog_skills(self, path: str) -> dict:
         """블로그 스타일 Skills 로드"""
         with open(path, 'r', encoding='utf-8') as f:
             return json.load(f)
+
+    def _load_image_index(self):
+        """이미지 인덱스 로드"""
+        try:
+            with open(self.image_index_path, 'r', encoding='utf-8') as f:
+                self.image_index = json.load(f)
+            print(f"✅ 이미지 인덱스 로드: {len(self.image_index.get('images', []))}개")
+        except Exception as e:
+            print(f"⚠️ 이미지 인덱스 로드 실패: {e}")
+
+    def _suggest_images_for_section(self, section_text: str, top_k: int = 3) -> List[Dict]:
+        """섹션 내용에 맞는 이미지 추천"""
+        if not self.image_index:
+            return []
+
+        # 간단한 키워드 매칭
+        keywords = section_text.split()[:10]  # 상위 10개 단어
+
+        matches = []
+        for image in self.image_index.get('images', []):
+            score = 0
+            description = image.get('description', '').lower()
+            tags = ' '.join(image.get('tags', [])).lower()
+
+            for keyword in keywords:
+                if len(keyword) < 2:
+                    continue
+                keyword_lower = keyword.lower()
+                if keyword_lower in description:
+                    score += 2
+                if keyword_lower in tags:
+                    score += 1
+
+            if score > 0:
+                matches.append({
+                    **image,
+                    'relevance_score': score
+                })
+
+        # 점수 기준 정렬
+        matches.sort(key=lambda x: x['relevance_score'], reverse=True)
+        return matches[:top_k]
 
     def authenticate(self):
         """구글 API 인증"""
@@ -112,6 +158,9 @@ class BlogPostCreator:
         """원고를 블로그 스타일로 변환"""
         print(f"\n🎨 블로그 스타일 변환: {self.blog_skills['blog_id']}")
 
+        # 이미지 빈도 가이드
+        image_freq = self.blog_skills.get('image_style', {}).get('image_frequency', '보통')
+
         prompt = f"""다음은 원고 텍스트입니다. 이것을 네이버 블로그 포스트로 변환해주세요.
 
 # 원고
@@ -125,11 +174,12 @@ class BlogPostCreator:
 - 격식: {self.blog_skills['style_profile']['formality']}/5
 - 타겟: {self.blog_skills['content_strategy']['target_audience']}
 - 목적: {self.blog_skills['content_strategy']['primary_purpose']}
+- 이미지 빈도: {image_freq}
 
 # 요구사항
 1. 제목을 블로그에 적합하게 재작성 (SEO 고려, 클릭 유도)
 2. 본문을 블로그 스타일로 재작성
-3. 이미지가 들어갈 위치에 [이미지: 설명] 표시
+3. 이미지가 들어갈 위치에 [이미지: 설명] 표시 (이미지 빈도: {image_freq})
 4. 단락은 짧고 간결하게 (2-3문장)
 5. 볼드로 강조할 부분은 **텍스트** 표시
 6. 이 블로그의 어투와 스타일을 정확히 따를 것
@@ -225,14 +275,29 @@ class BlogPostCreator:
                 index += len(content) + 2
 
             elif section['type'] == 'image_placeholder':
-                placeholder_text = f"\n[이미지 위치: {section['description']}]\n\n"
+                # 이미지 추천 (인덱스가 있으면)
+                suggested_images = self._suggest_images_for_section(
+                    section.get('description', ''), top_k=3
+                )
+
+                if suggested_images:
+                    # 추천 이미지 정보 포함
+                    img_text = f"\n[이미지 위치: {section['description']}]\n"
+                    img_text += "추천 이미지:\n"
+                    for i, img in enumerate(suggested_images[:3], 1):
+                        img_text += f"{i}. {img.get('filename', 'N/A')} (점수: {img.get('relevance_score', 0)})\n"
+                        img_text += f"   {img.get('web_view_link', 'N/A')}\n"
+                    img_text += "\n"
+                else:
+                    img_text = f"\n[이미지 위치: {section['description']}]\n\n"
+
                 requests.append({
                     'insertText': {
                         'location': {'index': index},
-                        'text': placeholder_text
+                        'text': img_text
                     }
                 })
-                index += len(placeholder_text)
+                index += len(img_text)
 
         # 문서 업데이트
         if requests:
@@ -296,8 +361,11 @@ def main():
     # 블로그 선택 (chikkqueen 예시)
     blog_skills_path = "blog_skills_complete_chikkqueen.json"
 
+    # 이미지 인덱스 (있으면)
+    image_index_path = "image_index.json" if os.path.exists("image_index.json") else None
+
     # 생성
-    creator = BlogPostCreator(blog_skills_path)
+    creator = BlogPostCreator(blog_skills_path, image_index_path)
     new_doc_url = creator.create_blog_post(source_url)
 
     print(f"\n🎉 새 블로그 포스트가 생성되었습니다!")
